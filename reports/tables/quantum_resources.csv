@@ -1,0 +1,4 @@
+Model,Qubits,Circuit Depth,Feature Map,Shots,Backend,Train Samples,Kernel Build Time (s),Total Runtime (s),Trainable Parameters,Best ROC-AUC
+Quantum Kernel SVM (4q),4,31,ZZFeatureMap (reps=2),statevector (exact — equivalent to shots → ∞),statevector_simulator,800,6.9237,6.9375,-,0.4701
+Quantum Kernel SVM (6q),6,49,ZZFeatureMap (reps=2),statevector (exact — equivalent to shots → ∞),statevector_simulator,800,8.4452,8.4541,-,0.6222
+VQC (4q),4,27,"ZZFeatureMap (reps=1) + RealAmplitudes (reps=3, linear)",StatevectorSampler (default_shots=1024),statevector_simulator,800,-,264.03,16,0.5415
