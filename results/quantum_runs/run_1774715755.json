@@ -1,0 +1,92 @@
+{
+  "experiment": "quantum_kernel_wildfire_svm",
+  "timestamp_utc": "2026-03-28T16:35:55Z",
+  "random_seed": 42,
+  "data": {
+    "source_file": "wildfire_weather.csv",
+    "train_years": [
+      2018,
+      2019,
+      2020
+    ],
+    "val_years": [
+      2021
+    ],
+    "train_samples": 400,
+    "val_samples": 2593,
+    "subsampled": true,
+    "max_train_cap": 400,
+    "class_balance": {
+      "train_fire_rate": 0.085,
+      "val_fire_rate": 0.086
+    }
+  },
+  "feature_engineering": {
+    "candidate_features": [
+      "avg_tmax_c",
+      "avg_tmin_c",
+      "tot_prcp_mm",
+      "temp_range",
+      "lag_1_fire_count",
+      "cumulative_fire_count"
+    ],
+    "selection_method": "SelectKBest (mutual_info_classif)",
+    "mi_scores": {
+      "avg_tmax_c": 0.0714,
+      "avg_tmin_c": 0.0607,
+      "tot_prcp_mm": 0.0374,
+      "temp_range": 0.0654,
+      "lag_1_fire_count": 0.0105,
+      "cumulative_fire_count": 0.0123
+    },
+    "selected_features": [
+      "avg_tmax_c",
+      "avg_tmin_c",
+      "tot_prcp_mm",
+      "temp_range"
+    ],
+    "scaler": "StandardScaler (fit on train)"
+  },
+  "quantum_config": {
+    "kernel": "FidelityStatevectorKernel",
+    "kernel_type": "ZZFeatureMap inner-product fidelity |<\u03c6(x)|\u03c6(y)>|\u00b2",
+    "feature_map": "ZZFeatureMap",
+    "num_qubits": 4,
+    "reps": 2,
+    "circuit_depth_decomposed": 31,
+    "num_parameters": 4,
+    "shots": "statevector (exact \u2014 equivalent to shots \u2192 \u221e)",
+    "backend": "statevector_simulator",
+    "K_train_shape": [
+      400,
+      400
+    ],
+    "K_val_shape": [
+      2593,
+      400
+    ],
+    "kernel_runtime_s": 3.2698,
+    "svm_train_runtime_s": 0.0021
+  },
+  "quantum_svm_results": {
+    "sklearn_kernel": "precomputed",
+    "roc_auc": 0.4406,
+    "f1": 0.0225,
+    "precision": 0.0682,
+    "recall": 0.0135
+  },
+  "classical_svm_baseline": {
+    "sklearn_kernel": "rbf",
+    "train_runtime_s": 0.0061,
+    "roc_auc": 0.6463,
+    "f1": 0.0,
+    "precision": 0.0,
+    "recall": 0.0
+  },
+  "comparison": {
+    "delta_roc_auc": -0.2057,
+    "delta_f1": 0.0225,
+    "delta_precision": 0.0682,
+    "delta_recall": 0.0135
+  }
+}
