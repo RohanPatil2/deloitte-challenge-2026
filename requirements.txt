@@ -1,0 +1,9 @@
+qiskit
+qiskit-machine-learning
+qiskit-aer
+scikit-learn
+pandas
+numpy
+matplotlib
+seaborn
+shap

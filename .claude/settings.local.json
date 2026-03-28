@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git init:*)",
+      "Bash(git checkout:*)",
+      "Bash(mkdir -p data/raw data/processed notebooks src/models/quantum src/evaluation src/utils results/quantum_runs results/quantum_metrics reports/figures reports/tables)",
+      "Bash(touch data/raw/.gitkeep data/processed/.gitkeep notebooks/.gitkeep src/models/quantum/.gitkeep src/evaluation/.gitkeep src/utils/.gitkeep results/quantum_runs/.gitkeep results/quantum_metrics/.gitkeep reports/figures/.gitkeep reports/tables/.gitkeep)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"Initial project scaffold for quantum model:*)"
+    ]
+  }
+}
