@@ -1,6 +1,6 @@
 {
   "experiment": "classical_baselines_wildfire",
-  "timestamp_utc": "2026-03-28T16:47:11Z",
+  "timestamp_utc": "2026-03-28T17:35:25Z",
   "random_seed": 42,
   "data": {
     "source_file": "wildfire_weather.csv",
@@ -41,10 +41,11 @@
         "class_weight": "balanced"
       },
       "roc_auc": 0.8647,
+      "pr_auc": 0.4481,
       "f1": 0.3546,
       "precision": 0.2252,
       "recall": 0.8341,
-      "train_runtime_s": 0.0276
+      "train_runtime_s": 0.022
     },
     "random_forest": {
       "params": {
@@ -52,10 +53,11 @@
         "class_weight": "balanced"
       },
       "roc_auc": 0.6406,
+      "pr_auc": 0.214,
       "f1": 0.1765,
       "precision": 0.1007,
       "recall": 0.713,
-      "train_runtime_s": 0.2566
+      "train_runtime_s": 0.2498
     },
     "gradient_boosting": {
       "params": {
@@ -66,10 +68,11 @@
         "class_weight": "balanced (via sample_weight)"
       },
       "roc_auc": 0.8471,
+      "pr_auc": 0.469,
       "f1": 0.2494,
       "precision": 0.1443,
       "recall": 0.9193,
-      "train_runtime_s": 0.8201
+      "train_runtime_s": 0.7999
     },
     "svm_rbf": {
       "params": {
@@ -77,10 +80,11 @@
         "class_weight": "balanced"
       },
       "roc_auc": 0.8372,
+      "pr_auc": 0.2583,
       "f1": 0.3363,
       "precision": 0.2106,
       "recall": 0.8341,
-      "train_runtime_s": 3.8075
+      "train_runtime_s": 3.7887
     }
   }
 }

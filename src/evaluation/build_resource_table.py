@@ -88,17 +88,23 @@ samples = qk_data["data"]["train_samples"]
 
 rows = []
 
-for qubit_key, display_name in [
-    ("quantum_4qubit", "Quantum Kernel SVM (4q)"),
-    ("quantum_6qubit", "Quantum Kernel SVM (6q)"),
-]:
+qk_rows_config = [
+    ("quantum_4qubit",       "Quantum Kernel SVM (4q)"),
+    ("quantum_6qubit",       "Quantum Kernel SVM (6q)"),
+    ("quantum_pauli_4qubit", "Quantum Kernel SVM (Pauli-4q)"),
+]
+
+for qubit_key, display_name in qk_rows_config:
+    if qubit_key not in qk_data:
+        continue
     q            = qk_data[qubit_key]
     n_q          = q["num_qubits"]
     depth        = q["circuit_depth"]
     k_time       = round(q["kernel_runtime_s"], 4)
     svm_time     = round(q["svm_train_runtime_s"], 4)
     total        = round(k_time + svm_time, 4)
-    feature_map  = f"ZZFeatureMap (reps={sc['zz_reps']})"
+    fm_name      = q.get("feature_map_name", "ZZFeatureMap")
+    feature_map  = f"{fm_name} (reps={sc['reps']})"
     shots        = sc["shots"]
     backend      = sc["backend"]
     roc_auc      = q["roc_auc"]
@@ -117,7 +123,7 @@ for qubit_key, display_name in [
         "Best ROC-AUC"          : roc_auc,
     })
 
-print(f"  Loaded Q-Kernel 4q + 6q  ← {qk_path.name}")
+print(f"  Loaded Q-Kernel 4q + 6q + Pauli-4q  ← {qk_path.name}")
 
 
 # ══════════════════════════════════════════════════════════════════════════════

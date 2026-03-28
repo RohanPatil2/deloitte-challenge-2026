@@ -34,6 +34,7 @@ import pandas as pd
 from scipy.optimize import minimize as scipy_minimize
 from sklearn.feature_selection import SelectKBest, mutual_info_classif
 from sklearn.metrics import (
+    average_precision_score,
     f1_score,
     precision_score,
     recall_score,
@@ -437,11 +438,13 @@ y_prob_vqc  = vqc.predict_proba(X_val_sc)[:, 1]
 
 vqc_metrics = {
     "roc_auc"   : float(roc_auc_score(y_val, y_prob_vqc)),
+    "pr_auc"    : float(average_precision_score(y_val, y_prob_vqc)),
     "f1"        : float(f1_score(y_val, y_pred_vqc, zero_division=0)),
     "precision" : float(precision_score(y_val, y_pred_vqc, zero_division=0)),
     "recall"    : float(recall_score(y_val, y_pred_vqc, zero_division=0)),
 }
 print(f"    ROC-AUC   : {vqc_metrics['roc_auc']:.4f}")
+print(f"    PR-AUC    : {vqc_metrics['pr_auc']:.4f}")
 print(f"    F1        : {vqc_metrics['f1']:.4f}")
 print(f"    Precision : {vqc_metrics['precision']:.4f}")
 print(f"    Recall    : {vqc_metrics['recall']:.4f}")
@@ -528,7 +531,7 @@ try:
         if "quantum_6qubit" in data and "quantum_4qubit" in data:
             q6 = data["quantum_6qubit"]
             q4 = data["quantum_4qubit"]
-            for k in ["roc_auc", "f1", "precision", "recall"]:
+            for k in ["roc_auc", "pr_auc", "f1", "precision", "recall"]:
                 qk_metrics_6q[k] = q6.get(k, float("nan"))
                 qk_metrics_4q[k] = q4.get(k, float("nan"))
             break
@@ -540,14 +543,14 @@ cl_metrics = {}
 try:
     cl_data = json.loads((METRICS_DIR / "classical_baselines.json").read_text())
     lr = cl_data["models"]["logistic_regression"]
-    for k in ["roc_auc", "f1", "precision", "recall"]:
+    for k in ["roc_auc", "pr_auc", "f1", "precision", "recall"]:
         cl_metrics[k] = lr.get(k, float("nan"))
 except Exception:
     pass
 
 # ── Print table ───────────────────────────────────────────────────────────────
 col = 13
-metrics = ["roc_auc", "f1", "precision", "recall"]
+metrics = ["roc_auc", "pr_auc", "f1", "precision", "recall"]
 
 print()
 print("{:<12} {:>{c}} {:>{c}} {:>{c}} {:>{c}}".format(

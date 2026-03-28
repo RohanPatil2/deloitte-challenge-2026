@@ -1,8 +1,9 @@
-Model,Type,Qubits,Features,ROC-AUC,F1,Precision,Recall,Runtime_s,Train_samples,Notes
-Logistic Regression,Classical,-,tmax; tmin; prcp; range; lag1; lag2; cum_fire; ever_fire,0.8647,0.3546,0.2252,0.8341,0.0276,7779,max_iter=1000; class_weight=balanced
-Random Forest,Classical,-,tmax; tmin; prcp; range; lag1; lag2; cum_fire; ever_fire,0.6406,0.1765,0.1007,0.713,0.2566,7779,n_estimators=300; class_weight=balanced
-Gradient Boosting,Classical,-,tmax; tmin; prcp; range; lag1; lag2; cum_fire; ever_fire,0.8471,0.2494,0.1443,0.9193,0.8201,7779,n_estimators=300; lr=0.05; balanced via sample_weight
-Classical SVM (RBF),Classical,-,tmax; tmin; prcp; range; lag1; lag2; cum_fire; ever_fire,0.8372,0.3363,0.2106,0.8341,3.8075,7779,RBF kernel; class_weight=balanced
-Quantum Kernel SVM (4q),Quantum Kernel,4,tmax; tmin; prcp; range,0.4701,0.1316,0.0811,0.3498,6.9375,800,FidelityStatevectorKernel; ZZFeatureMap reps=2; circuit_depth=31; class_weight=balanced
-Quantum Kernel SVM (6q),Quantum Kernel,6,tmax; tmin; prcp; range; cum_fire; ever_fire,0.6222,0.0552,0.0469,0.0673,8.4541,800,FidelityStatevectorKernel; ZZFeatureMap reps=2; circuit_depth=49; class_weight=balanced
-VQC (4q),Quantum VQC,4,tmax; tmin; prcp; range,0.5415,0.1535,0.0895,0.5381,264.03,800,"ZZFeatureMap (reps=1); RealAmplitudes (reps=3, linear); depth=27; 16 params; COBYLA iters=100; WeightedCrossEntropyLoss"
+Model,Type,Qubits,Features,ROC-AUC,PR-AUC,F1,Precision,Recall,Runtime_s,Train_samples,Notes
+Logistic Regression,Classical,-,tmax; tmin; prcp; range; lag1; lag2; cum_fire; ever_fire,0.8647,0.4481,0.3546,0.2252,0.8341,0.022,7779,max_iter=1000; class_weight=balanced
+Random Forest,Classical,-,tmax; tmin; prcp; range; lag1; lag2; cum_fire; ever_fire,0.6406,0.214,0.1765,0.1007,0.713,0.2498,7779,n_estimators=300; class_weight=balanced
+Gradient Boosting,Classical,-,tmax; tmin; prcp; range; lag1; lag2; cum_fire; ever_fire,0.8471,0.469,0.2494,0.1443,0.9193,0.7999,7779,n_estimators=300; lr=0.05; balanced via sample_weight
+Classical SVM (RBF),Classical,-,tmax; tmin; prcp; range; lag1; lag2; cum_fire; ever_fire,0.8372,0.2583,0.3363,0.2106,0.8341,3.7887,7779,RBF kernel; class_weight=balanced
+Quantum Kernel SVM (4q),Quantum Kernel,4,tmax; tmin; prcp; range,0.4701,0.0844,0.1316,0.0811,0.3498,6.8515,800,FidelityStatevectorKernel; ZZFeatureMap reps=2; circuit_depth=31; class_weight=balanced
+Quantum Kernel SVM (6q),Quantum Kernel,6,tmax; tmin; prcp; range; cum_fire; ever_fire,0.6222,0.1105,0.0552,0.0469,0.0673,8.3727,800,FidelityStatevectorKernel; ZZFeatureMap reps=2; circuit_depth=49; class_weight=balanced
+Quantum Kernel SVM (Pauli-4q),Quantum Kernel,4,tmax; tmin; range; cum_fire,0.5436,0.1182,0.169,0.1026,0.4798,7.355,800,FidelityStatevectorKernel; PauliFeatureMap reps=2; circuit_depth=31; class_weight=balanced
+VQC (4q),Quantum VQC,4,tmax; tmin; prcp; range,0.4775,0.1418,0.1356,0.0774,0.5471,267.13,800,"ZZFeatureMap (reps=1); RealAmplitudes (reps=3, linear); depth=27; 16 params; COBYLA iters=100; WeightedCrossEntropyLoss"

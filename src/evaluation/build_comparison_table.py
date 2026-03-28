@@ -37,7 +37,7 @@ OUT_CSV = REPORTS_DIR / "model_comparison.csv"
 # ── Column order for the output table ─────────────────────────────────────────
 COLUMNS = [
     "Model", "Type", "Qubits", "Features",
-    "ROC-AUC", "F1", "Precision", "Recall",
+    "ROC-AUC", "PR-AUC", "F1", "Precision", "Recall",
     "Runtime_s", "Train_samples", "Notes",
 ]
 
@@ -118,6 +118,7 @@ for key, display_name in CLASSICAL_DISPLAY.items():
         "Qubits"        : "-",
         "Features"      : fmt_features(cl_feats),
         "ROC-AUC"       : m["roc_auc"],
+        "PR-AUC"        : m.get("pr_auc", float("nan")),
         "F1"            : m["f1"],
         "Precision"     : m["precision"],
         "Recall"        : m["recall"],
@@ -168,6 +169,7 @@ for qubit_key, display_name in [
         "Qubits"        : n_q,
         "Features"      : fmt_features(feats),
         "ROC-AUC"       : q["roc_auc"],
+        "PR-AUC"        : q.get("pr_auc", float("nan")),
         "F1"            : q["f1"],
         "Precision"     : q["precision"],
         "Recall"        : q["recall"],
@@ -178,6 +180,29 @@ for qubit_key, display_name in [
             f"circuit_depth={depth}; class_weight=balanced"
         ),
     })
+
+# ── Pauli-4q row (from quantum_pauli_4qubit key if present) ───────────────────
+if "quantum_pauli_4qubit" in qk_data:
+    qp = qk_data["quantum_pauli_4qubit"]
+    p_runtime = round(qp["kernel_runtime_s"] + qp["svm_train_runtime_s"], 4)
+    rows.append({
+        "Model"         : "Quantum Kernel SVM (Pauli-4q)",
+        "Type"          : "Quantum Kernel",
+        "Qubits"        : qp["num_qubits"],
+        "Features"      : fmt_features(qp["selected_features"]),
+        "ROC-AUC"       : qp["roc_auc"],
+        "PR-AUC"        : qp.get("pr_auc", float("nan")),
+        "F1"            : qp["f1"],
+        "Precision"     : qp["precision"],
+        "Recall"        : qp["recall"],
+        "Runtime_s"     : p_runtime,
+        "Train_samples" : qk_samples,
+        "Notes"         : (
+            f"FidelityStatevectorKernel; PauliFeatureMap reps=2; "
+            f"circuit_depth={qp['circuit_depth']}; class_weight=balanced"
+        ),
+    })
+    print(f"  Loaded Q-Kernel Pauli-4q from {qk_path.name}")
 
 print(f"  Loaded Q-Kernel 4q + 6q from {qk_path.name} "
       f"(train_samples={qk_samples:,})")
@@ -207,6 +232,7 @@ rows.append({
     "Qubits"        : vqc_cfg["num_qubits"],
     "Features"      : fmt_features(vqc_feats),
     "ROC-AUC"       : vqc_res["roc_auc"],
+    "PR-AUC"        : vqc_res.get("pr_auc", float("nan")),
     "F1"            : vqc_res["f1"],
     "Precision"     : vqc_res["precision"],
     "Recall"        : vqc_res["recall"],
@@ -236,6 +262,7 @@ MODEL_ORDER = [
     "Classical SVM (RBF)",
     "Quantum Kernel SVM (4q)",
     "Quantum Kernel SVM (6q)",
+    "Quantum Kernel SVM (Pauli-4q)",
     "VQC (4q)",
 ]
 
@@ -244,7 +271,7 @@ df["_order"] = df["Model"].map({m: i for i, m in enumerate(MODEL_ORDER)})
 df = df.sort_values("_order").drop(columns="_order").reset_index(drop=True)
 
 # Round numeric columns
-for col in ["ROC-AUC", "F1", "Precision", "Recall"]:
+for col in ["ROC-AUC", "PR-AUC", "F1", "Precision", "Recall"]:
     df[col] = df[col].round(4)
 df["Runtime_s"] = df["Runtime_s"].round(4)
 
@@ -263,7 +290,7 @@ W_METRIC  =  9
 W_RUNTIME = 10
 W_SAMPLES = 14
 
-DIVIDER = "─" * (W_MODEL + W_TYPE + W_QUBITS + W_METRIC * 4 + W_RUNTIME + W_SAMPLES + 8)
+DIVIDER = "─" * (W_MODEL + W_TYPE + W_QUBITS + W_METRIC * 5 + W_RUNTIME + W_SAMPLES + 9)
 
 print()
 print("=" * len(DIVIDER))
@@ -276,6 +303,7 @@ header = (
     f"{'Type':<{W_TYPE}} "
     f"{'Q':>{W_QUBITS}} "
     f"{'ROC-AUC':>{W_METRIC}} "
+    f"{'PR-AUC':>{W_METRIC}} "
     f"{'F1':>{W_METRIC}} "
     f"{'Precision':>{W_METRIC}} "
     f"{'Recall':>{W_METRIC}} "
@@ -292,11 +320,18 @@ for _, row in df.iterrows():
         print()
     prev_type = row["Type"]
 
+    pr_auc_val = row["PR-AUC"]
+    pr_auc_str = (
+        f"{pr_auc_val:>{W_METRIC}.4f}"
+        if not (isinstance(pr_auc_val, float) and pr_auc_val != pr_auc_val)
+        else f"{'n/a':>{W_METRIC}}"
+    )
     print(
         f"{row['Model']:<{W_MODEL}} "
         f"{row['Type']:<{W_TYPE}} "
         f"{str(row['Qubits']):>{W_QUBITS}} "
         f"{row['ROC-AUC']:>{W_METRIC}.4f} "
+        f"{pr_auc_str} "
         f"{row['F1']:>{W_METRIC}.4f} "
         f"{row['Precision']:>{W_METRIC}.4f} "
         f"{row['Recall']:>{W_METRIC}.4f} "
@@ -326,7 +361,7 @@ print("               lag1=fire_count_lag1  lag2=fire_count_lag2  "
 # ── Best per metric ───────────────────────────────────────────────────────────
 print()
 print("Best per metric:")
-for metric in ["ROC-AUC", "F1", "Precision", "Recall"]:
+for metric in ["ROC-AUC", "PR-AUC", "F1", "Precision", "Recall"]:
     best_idx = df[metric].idxmax()
     best_row = df.loc[best_idx]
     print(f"  {metric:<12} → {best_row['Model']:<26} ({best_row[metric]:.4f})")

@@ -31,6 +31,7 @@ import pandas as pd
 from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
+    average_precision_score,
     f1_score,
     precision_score,
     recall_score,
@@ -259,6 +260,7 @@ def evaluate(name, model, X_tr, y_tr, X_v, y_v,
 
     metrics = {
         "roc_auc"   : float(roc_auc_score(y_v, y_prob)),
+        "pr_auc"    : float(average_precision_score(y_v, y_prob)),
         "f1"        : float(f1_score(y_v, y_pred, zero_division=0)),
         "precision" : float(precision_score(y_v, y_pred, zero_division=0)),
         "recall"    : float(recall_score(y_v, y_pred, zero_division=0)),
@@ -266,6 +268,7 @@ def evaluate(name, model, X_tr, y_tr, X_v, y_v,
     }
     print(f"\n    [{name}]")
     print(f"      ROC-AUC   : {metrics['roc_auc']:.4f}")
+    print(f"      PR-AUC    : {metrics['pr_auc']:.4f}")
     print(f"      F1        : {metrics['f1']:.4f}")
     print(f"      Precision : {metrics['precision']:.4f}")
     print(f"      Recall    : {metrics['recall']:.4f}")

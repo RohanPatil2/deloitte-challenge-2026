@@ -19,6 +19,7 @@ Pipeline steps
 5. Train / val split  (train: 2018-2020 | val: 2021)
 6. Run quantum experiment A: top 4 features → 4-qubit ZZFeatureMap + SVC (balanced)
 7. Run quantum experiment B: top 6 features → 6-qubit ZZFeatureMap + SVC (balanced)
+   Run quantum experiment C: top 4 features → 4-qubit PauliFeatureMap + SVC (circuit ablation)
 8. Classical SVM baseline – RBF kernel SVC (balanced) on 6-qubit feature set
 9. Evaluate all three: ROC-AUC, F1, precision, recall
 10. Log everything to results/quantum_runs/<timestamp>.json
@@ -41,6 +42,7 @@ import numpy as np
 import pandas as pd
 from sklearn.feature_selection import SelectKBest, mutual_info_classif
 from sklearn.metrics import (
+    average_precision_score,
     f1_score,
     precision_score,
     recall_score,
@@ -50,7 +52,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 from sklearn.utils import resample
 
-from qiskit.circuit.library import ZZFeatureMap
+from qiskit.circuit.library import PauliFeatureMap, ZZFeatureMap
 from qiskit_machine_learning.kernels import FidelityStatevectorKernel
 
 warnings.filterwarnings("ignore")
@@ -60,8 +62,15 @@ RANDOM_SEED = 42
 np.random.seed(RANDOM_SEED)
 
 # ── Configuration ──────────────────────────────────────────────────────────────
-QUBIT_CONFIGS    = [4, 6]   # run one experiment per qubit count
-ZZ_REPS          = 2        # ZZFeatureMap circuit repetitions (shared)
+ZZ_REPS          = 2        # feature map repetitions (shared across experiments)
+# Each entry: (n_qubits, feature_map_name, feature_map_object)
+# The 4-qubit slot runs both ZZFeatureMap and PauliFeatureMap for a circuit
+# design ablation. The 6-qubit slot runs ZZFeatureMap only.
+EXPERIMENT_CONFIGS = [
+    (4, "ZZFeatureMap",    ZZFeatureMap(feature_dimension=4, reps=ZZ_REPS)),
+    (6, "ZZFeatureMap",    ZZFeatureMap(feature_dimension=6, reps=ZZ_REPS)),
+    (4, "PauliFeatureMap", PauliFeatureMap(feature_dimension=4, reps=ZZ_REPS)),
+]
 TRAIN_YEARS      = [2018, 2019, 2020]
 VAL_YEARS        = [2021]
 # Quantum kernel matrices are O(n²); cap training samples to keep runtime
@@ -275,11 +284,13 @@ if MAX_TRAIN_SAMPLES and len(X_train_raw) > MAX_TRAIN_SAMPLES:
 # 6 & 7. QUANTUM EXPERIMENTS  (4-qubit and 6-qubit, same 800-sample train set)
 # ══════════════════════════════════════════════════════════════════════════════
 
-def run_quantum_experiment(n_qubits, X_tr_raw, y_tr, X_v_raw, y_v,
-                           candidate_features, zz_reps, random_seed):
+def run_quantum_experiment(n_qubits, feature_map, feature_map_name,
+                           X_tr_raw, y_tr, X_v_raw, y_v,
+                           candidate_features, random_seed):
     """
-    Select top n_qubits features, scale, build a ZZFeatureMap kernel,
-    train a balanced SVC, evaluate on val, and return a results dict.
+    Select top n_qubits features, scale, build a quantum kernel from the
+    supplied feature_map, train a balanced SVC, evaluate on val, and return
+    a results dict.  feature_map_name is a string label used in logging.
     """
     # ── Feature selection ────────────────────────────────────────────────────
     selector = SelectKBest(score_func=mutual_info_classif, k=n_qubits)
@@ -295,10 +306,8 @@ def run_quantum_experiment(n_qubits, X_tr_raw, y_tr, X_v_raw, y_v,
     X_tr_sc  = scaler.fit_transform(X_tr_sel)
     X_v_sc   = scaler.transform(X_v_sel)
 
-    # ── Quantum feature map & kernel ─────────────────────────────────────────
-    # ZZFeatureMap: encodes each feature via H + Rz + ZZ entanglement gates.
+    # ── Quantum kernel ────────────────────────────────────────────────────────
     # FidelityStatevectorKernel: K(x,y) = |<φ(x)|φ(y)>|² (exact statevector).
-    feature_map   = ZZFeatureMap(feature_dimension=n_qubits, reps=zz_reps)
     circuit_depth = feature_map.decompose().depth()
     num_params    = feature_map.num_parameters
     qkernel       = FidelityStatevectorKernel(feature_map=feature_map)
@@ -320,12 +329,14 @@ def run_quantum_experiment(n_qubits, X_tr_raw, y_tr, X_v_raw, y_v,
 
     metrics = {
         "roc_auc"   : float(roc_auc_score(y_v, y_prob)),
+        "pr_auc"    : float(average_precision_score(y_v, y_prob)),
         "f1"        : float(f1_score(y_v, y_pred, zero_division=0)),
         "precision" : float(precision_score(y_v, y_pred, zero_division=0)),
         "recall"    : float(recall_score(y_v, y_pred, zero_division=0)),
     }
 
     return {
+        "feature_map_name"        : feature_map_name,
         "selected_features"       : selected,
         "mi_scores"               : {k: round(v, 4) for k, v in mi_scores.items()},
         "circuit_depth"           : int(circuit_depth),
@@ -335,37 +346,41 @@ def run_quantum_experiment(n_qubits, X_tr_raw, y_tr, X_v_raw, y_v,
         "kernel_runtime_s"        : round(kernel_runtime, 4),
         "svm_train_runtime_s"     : round(svm_runtime, 4),
         "metrics"                 : metrics,
-        # keep scaled arrays for classical SVM (returned only from last call)
+        # keep scaled arrays for classical SVM baseline (stripped before serialising)
         "_X_tr_sc"                : X_tr_sc,
         "_X_v_sc"                 : X_v_sc,
     }
 
 
+# quantum_results keyed by experiment label: "zz_4q", "zz_6q", "pauli_4q"
 quantum_results = {}
 
-for n_q in QUBIT_CONFIGS:
+for n_q, fm_name, fm_obj in EXPERIMENT_CONFIGS:
+    exp_key = f"{'zz' if 'ZZ' in fm_name else 'pauli'}_{n_q}q"
     print(f"\n{'─'*65}")
-    print(f"[Experiment] Quantum SVM — {n_q} qubits, reps={ZZ_REPS}, "
+    print(f"[Experiment] Quantum SVM — {n_q} qubits, {fm_name}, reps={ZZ_REPS}, "
           f"train_samples={MAX_TRAIN_SAMPLES}")
     print(f"{'─'*65}")
 
     res = run_quantum_experiment(
         n_qubits=n_q,
+        feature_map=fm_obj,
+        feature_map_name=fm_name,
         X_tr_raw=X_train_raw,
         y_tr=y_train,
         X_v_raw=X_val_raw,
         y_v=y_val,
         candidate_features=CANDIDATE_FEATURES,
-        zz_reps=ZZ_REPS,
         random_seed=RANDOM_SEED,
     )
-    quantum_results[n_q] = res
+    quantum_results[exp_key] = res
 
     m = res["metrics"]
     print(f"    Selected ({n_q}): {res['selected_features']}")
     print(f"    Circuit depth : {res['circuit_depth']}")
     print(f"    Kernel time   : {res['kernel_runtime_s']:.2f}s")
     print(f"    ROC-AUC       : {m['roc_auc']:.4f}")
+    print(f"    PR-AUC        : {m['pr_auc']:.4f}")
     print(f"    F1            : {m['f1']:.4f}")
     print(f"    Precision     : {m['precision']:.4f}")
     print(f"    Recall        : {m['recall']:.4f}")
@@ -378,9 +393,9 @@ print(f"\n{'─'*65}")
 print("[Baseline] Classical SVM (RBF) — 6-qubit feature set, balanced")
 print(f"{'─'*65}")
 
-# Reuse the scaled arrays produced by the 6-qubit experiment
-X_tr_sc_6 = quantum_results[6]["_X_tr_sc"]
-X_v_sc_6  = quantum_results[6]["_X_v_sc"]
+# Reuse the scaled arrays produced by the 6-qubit ZZ experiment
+X_tr_sc_6 = quantum_results["zz_6q"]["_X_tr_sc"]
+X_v_sc_6  = quantum_results["zz_6q"]["_X_v_sc"]
 
 csvm = SVC(kernel="rbf", probability=True,
            class_weight="balanced", random_state=RANDOM_SEED)
@@ -393,15 +408,17 @@ y_prob_c = csvm.predict_proba(X_v_sc_6)[:, 1]
 
 c_metrics = {
     "roc_auc"   : float(roc_auc_score(y_val, y_prob_c)),
+    "pr_auc"    : float(average_precision_score(y_val, y_prob_c)),
     "f1"        : float(f1_score(y_val, y_pred_c, zero_division=0)),
     "precision" : float(precision_score(y_val, y_pred_c, zero_division=0)),
     "recall"    : float(recall_score(y_val, y_pred_c, zero_division=0)),
 }
-print(f"    Features      : {quantum_results[6]['selected_features']}")
+print(f"    Features      : {quantum_results['zz_6q']['selected_features']}")
 print(f"    Train time    : {c_runtime:.4f}s")
 print(f"    ROC-AUC       : {c_metrics['roc_auc']:.4f}")
 print(f"    F1            : {c_metrics['f1']:.4f}")
 print(f"    Precision     : {c_metrics['precision']:.4f}")
+print(f"    PR-AUC        : {c_metrics['pr_auc']:.4f}")
 print(f"    Recall        : {c_metrics['recall']:.4f}")
 
 # Strip internal arrays before serialising
@@ -436,8 +453,8 @@ run_log = {
         "candidate_features": CANDIDATE_FEATURES,
         "selection_method"  : "SelectKBest (mutual_info_classif)",
         "scaler"            : "StandardScaler (fit on train per experiment)",
-        "kernel"            : "FidelityStatevectorKernel (ZZFeatureMap, exact)",
-        "zz_reps"           : ZZ_REPS,
+        "kernel"            : "FidelityStatevectorKernel (exact statevector)",
+        "reps"              : ZZ_REPS,
         "shots"             : "statevector (exact — equivalent to shots → ∞)",
         "backend"           : "statevector_simulator",
         "class_weight"      : "balanced",
@@ -445,14 +462,20 @@ run_log = {
 
     "quantum_4qubit": {
         "num_qubits"         : 4,
-        **{k: v for k, v in quantum_results[4].items() if k != "metrics"},
-        **{k: round(v, 4) for k, v in quantum_results[4]["metrics"].items()},
+        **{k: v for k, v in quantum_results["zz_4q"].items() if k != "metrics"},
+        **{k: round(v, 4) for k, v in quantum_results["zz_4q"]["metrics"].items()},
     },
 
     "quantum_6qubit": {
         "num_qubits"         : 6,
-        **{k: v for k, v in quantum_results[6].items() if k != "metrics"},
-        **{k: round(v, 4) for k, v in quantum_results[6]["metrics"].items()},
+        **{k: v for k, v in quantum_results["zz_6q"].items() if k != "metrics"},
+        **{k: round(v, 4) for k, v in quantum_results["zz_6q"]["metrics"].items()},
+    },
+
+    "quantum_pauli_4qubit": {
+        "num_qubits"         : 4,
+        **{k: v for k, v in quantum_results["pauli_4q"].items() if k != "metrics"},
+        **{k: round(v, 4) for k, v in quantum_results["pauli_4q"]["metrics"].items()},
     },
 
     "classical_svm_baseline": {
@@ -473,42 +496,41 @@ print("=" * 65)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# 10. THREE-WAY COMPARISON TABLE
+# 10. FOUR-WAY COMPARISON TABLE  (ZZ-4q | ZZ-6q | Pauli-4q | Classical SVM)
 # ══════════════════════════════════════════════════════════════════════════════
-q4 = quantum_results[4]["metrics"]
-q6 = quantum_results[6]["metrics"]
+q_zz4   = quantum_results["zz_4q"]["metrics"]
+q_zz6   = quantum_results["zz_6q"]["metrics"]
+q_pauli = quantum_results["pauli_4q"]["metrics"]
 
-col = 14
+col = 13
+metrics_to_print = ["roc_auc", "pr_auc", "f1", "precision", "recall"]
+
 print()
-print("{:<12} {:>{c}} {:>{c}} {:>{c}} {:>{c}}".format(
-    "Metric",
-    "Q-4 qubit", "Q-6 qubit", "Classical SVM", "Δ(Q6 – Cl)",
-    c=col))
-print("-" * (12 + col * 4 + 4))
-for metric in ["roc_auc", "f1", "precision", "recall"]:
-    print("{:<12} {:>{c}.4f} {:>{c}.4f} {:>{c}.4f} {:>+{c}.4f}".format(
+print("{:<11} {:>{c}} {:>{c}} {:>{c}} {:>{c}}".format(
+    "Metric", "ZZ-4q", "ZZ-6q", "Pauli-4q", "Classical SVM", c=col))
+print("-" * (11 + col * 4 + 4))
+for metric in metrics_to_print:
+    print("{:<11} {:>{c}.4f} {:>{c}.4f} {:>{c}.4f} {:>{c}.4f}".format(
         metric,
-        q4[metric], q6[metric], c_metrics[metric],
-        q6[metric] - c_metrics[metric],
+        q_zz4[metric], q_zz6[metric], q_pauli[metric], c_metrics[metric],
         c=col))
 
 print()
-print("{:<28} {:>8} {:>8}".format("", "4-qubit", "6-qubit"))
-print("{:<28} {:>8} {:>8}".format(
+print("{:<30} {:>8} {:>8} {:>10}".format("", "ZZ-4q", "ZZ-6q", "Pauli-4q"))
+print("{:<30} {:>8} {:>8} {:>10}".format(
     "Circuit depth",
-    quantum_results[4]["circuit_depth"],
-    quantum_results[6]["circuit_depth"]))
-print("{:<28} {:>8} {:>8}".format(
-    "Selected features",
-    len(quantum_results[4]["selected_features"]),
-    len(quantum_results[6]["selected_features"])))
-print("{:<28} {:>7.2f}s {:>7.2f}s".format(
+    quantum_results["zz_4q"]["circuit_depth"],
+    quantum_results["zz_6q"]["circuit_depth"],
+    quantum_results["pauli_4q"]["circuit_depth"]))
+print("{:<30} {:>7.2f}s {:>7.2f}s {:>9.2f}s".format(
     "Kernel compute time",
-    quantum_results[4]["kernel_runtime_s"],
-    quantum_results[6]["kernel_runtime_s"]))
+    quantum_results["zz_4q"]["kernel_runtime_s"],
+    quantum_results["zz_6q"]["kernel_runtime_s"],
+    quantum_results["pauli_4q"]["kernel_runtime_s"]))
 print()
 print("Train : {} samples (subsampled={}) | Val : {} samples".format(
     len(y_train), train_sampled, len(y_val)))
 print("class_weight = balanced for all models")
-print("4-qubit features : {}".format(quantum_results[4]["selected_features"]))
-print("6-qubit features : {}".format(quantum_results[6]["selected_features"]))
+print("ZZ-4q features   : {}".format(quantum_results["zz_4q"]["selected_features"]))
+print("ZZ-6q features   : {}".format(quantum_results["zz_6q"]["selected_features"]))
+print("Pauli-4q features: {}".format(quantum_results["pauli_4q"]["selected_features"]))
