@@ -15,12 +15,12 @@ Pipeline steps
 1. Load & separate the two row types
 2. Aggregate weather to zip × year (mean temps, annual precip sum)
 3. Aggregate fire events to zip × year → binary target
-4. Engineer fire-history lag features (lag-1 count, cumulative count)
+4. Engineer fire-history lag features (lag-1, lag-2, cumulative, ever_had_fire)
 5. Train / val split  (train: 2018-2020 | val: 2021)
-6. Feature selection (top 4 via mutual information → 4 qubits)
+6. Feature selection (top 6 via mutual information → 6 qubits)
 7. StandardScaler normalisation
-8. Quantum Kernel SVM  – ZZFeatureMap + FidelityStatevectorKernel + SVC
-9. Classical SVM baseline – RBF kernel SVC
+8. Quantum Kernel SVM  – ZZFeatureMap + FidelityStatevectorKernel + SVC (balanced)
+9. Classical SVM baseline – RBF kernel SVC (balanced)
 10. Evaluate: ROC-AUC, F1, precision, recall
 11. Log everything to results/quantum_runs/<timestamp>.json
 
@@ -60,7 +60,7 @@ RANDOM_SEED = 42
 np.random.seed(RANDOM_SEED)
 
 # ── Configuration ──────────────────────────────────────────────────────────────
-N_QUBITS         = 4        # features fed to the quantum kernel = number of qubits
+N_QUBITS         = 6        # features fed to the quantum kernel = number of qubits
 ZZ_REPS          = 2        # ZZFeatureMap circuit repetitions
 TRAIN_YEARS      = [2018, 2019, 2020]
 VAL_YEARS        = [2021]
@@ -171,10 +171,10 @@ hist_counts = (
     .reset_index(name="fire_count")
 )
 
-# Build a complete grid: every (zip in dataset) × every relevant year
-# We need at least 2017 to compute lag-1 for 2018.
+# Build a complete grid: every (zip in dataset) × every relevant year.
+# We need 2016 to compute lag-2 for 2018, and 2017 for lag-1 of 2018.
 all_years_for_lag = sorted(
-    set([2017] + TRAIN_YEARS + VAL_YEARS)
+    set([2016, 2017] + TRAIN_YEARS + VAL_YEARS)
 )
 target_zips = dataset["zip"].unique()
 
@@ -188,32 +188,44 @@ grid = grid.merge(hist_counts, on=["zip", "Year"], how="left")
 grid["fire_count"] = grid["fire_count"].fillna(0)
 grid = grid.sort_values(["zip", "Year"]).reset_index(drop=True)
 
-# lag-1 fire count: fires in the immediately preceding year
-grid["lag_1_fire_count"] = (
+# fire_count_lag1: fires in the immediately preceding year (t-1)
+grid["fire_count_lag1"] = (
     grid.groupby("zip")["fire_count"]
     .transform(lambda s: s.shift(1).fillna(0))
 )
 
-# Cumulative fire count: total fires in ALL years BEFORE the current year
+# fire_count_lag2: fires two years prior (t-2)
+grid["fire_count_lag2"] = (
+    grid.groupby("zip")["fire_count"]
+    .transform(lambda s: s.shift(2).fillna(0))
+)
+
+# cumulative_fire_count: total fires in ALL years BEFORE the current year
 # (shift-then-cumsum gives the exclusive running total)
 grid["cumulative_fire_count"] = (
     grid.groupby("zip")["fire_count"]
     .transform(lambda s: s.cumsum().shift(1).fillna(0))
 )
 
+# ever_had_fire: binary flag — did this zip have any recorded fire before this year?
+grid["ever_had_fire"] = (grid["cumulative_fire_count"] > 0).astype(int)
+
 lag_features = grid[grid["Year"].isin(TRAIN_YEARS + VAL_YEARS)][
-    ["zip", "Year", "lag_1_fire_count", "cumulative_fire_count"]
+    ["zip", "Year", "fire_count_lag1", "fire_count_lag2",
+     "cumulative_fire_count", "ever_had_fire"]
 ]
 
 dataset = dataset.merge(lag_features, on=["zip", "Year"], how="left")
-dataset["lag_1_fire_count"]      = dataset["lag_1_fire_count"].fillna(0)
-dataset["cumulative_fire_count"] = dataset["cumulative_fire_count"].fillna(0)
+for col in ["fire_count_lag1", "fire_count_lag2", "cumulative_fire_count", "ever_had_fire"]:
+    dataset[col] = dataset[col].fillna(0)
 
 # Derived feature: annual temperature range (max – min)
 dataset["temp_range"] = dataset["avg_tmax_c"] - dataset["avg_tmin_c"]
 
-print(f"    lag_1_fire_count      – mean: {dataset['lag_1_fire_count'].mean():.3f}")
+print(f"    fire_count_lag1       – mean: {dataset['fire_count_lag1'].mean():.3f}")
+print(f"    fire_count_lag2       – mean: {dataset['fire_count_lag2'].mean():.3f}")
 print(f"    cumulative_fire_count – mean: {dataset['cumulative_fire_count'].mean():.3f}")
+print(f"    ever_had_fire         – rate: {dataset['ever_had_fire'].mean()*100:.1f}%")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -226,8 +238,10 @@ CANDIDATE_FEATURES = [
     "avg_tmin_c",
     "tot_prcp_mm",
     "temp_range",
-    "lag_1_fire_count",
+    "fire_count_lag1",
+    "fire_count_lag2",
     "cumulative_fire_count",
+    "ever_had_fire",
 ]
 
 train_df = dataset[dataset["Year"].isin(TRAIN_YEARS)].copy()
@@ -326,7 +340,7 @@ print(f"    K_train shape : {K_train.shape}  |  K_val shape : {K_val.shape}")
 # ══════════════════════════════════════════════════════════════════════════════
 print("\n[9] Training Quantum SVM (precomputed kernel) …")
 
-qsvm = SVC(kernel="precomputed", probability=True, random_state=RANDOM_SEED)
+qsvm = SVC(kernel="precomputed", probability=True, class_weight="balanced", random_state=RANDOM_SEED)
 
 t0 = time.perf_counter()
 qsvm.fit(K_train, y_train)
@@ -352,7 +366,7 @@ print(f"    Recall    : {q_metrics['recall']:.4f}")
 # ══════════════════════════════════════════════════════════════════════════════
 print("\n[10] Training Classical SVM baseline (RBF kernel) …")
 
-csvm = SVC(kernel="rbf", probability=True, random_state=RANDOM_SEED)
+csvm = SVC(kernel="rbf", probability=True, class_weight="balanced", random_state=RANDOM_SEED)
 
 t0 = time.perf_counter()
 csvm.fit(X_train_sc, y_train)
@@ -425,11 +439,13 @@ run_log = {
 
     "quantum_svm_results": {
         "sklearn_kernel": "precomputed",
+        "class_weight"  : "balanced",
         **{k: round(v, 4) for k, v in q_metrics.items()},
     },
 
     "classical_svm_baseline": {
         "sklearn_kernel"  : "rbf",
+        "class_weight"    : "balanced",
         "train_runtime_s" : round(c_train_runtime, 4),
         **{k: round(v, 4) for k, v in c_metrics.items()},
     },
@@ -448,3 +464,25 @@ out_path.write_text(json.dumps(run_log, indent=2))
 print(f"\n{'='*65}")
 print(f"Results saved → {out_path}")
 print("=" * 65)
+
+# ── Comparison table ──────────────────────────────────────────────────────────
+print()
+print("{:<20} {:>14} {:>14} {:>14}".format(
+    "Metric", "Quantum SVM", "Classical SVM", "Delta (Q-C)"))
+print("-" * 64)
+for metric in ["roc_auc", "f1", "precision", "recall"]:
+    print("{:<20} {:>14.4f} {:>14.4f} {:>+14.4f}".format(
+        metric,
+        q_metrics[metric],
+        c_metrics[metric],
+        q_metrics[metric] - c_metrics[metric],
+    ))
+print()
+print("class_weight    : balanced (both models)")
+print("Kernel runtime  : {:.4f}s  (quantum kernel matrices)".format(q_kernel_runtime))
+print("Classical train : {:.4f}s".format(c_train_runtime))
+print("Train samples   : {} (subsampled={})".format(len(y_train), train_sampled))
+print("Val samples     : {}".format(len(y_val)))
+print("Selected feats  : {}".format(selected_features))
+print("Num qubits      : {}".format(N_QUBITS))
+print("Circuit depth   : {}".format(circuit_depth))

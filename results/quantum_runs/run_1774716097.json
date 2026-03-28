@@ -1,0 +1,100 @@
+{
+  "experiment": "quantum_kernel_wildfire_svm",
+  "timestamp_utc": "2026-03-28T16:41:37Z",
+  "random_seed": 42,
+  "data": {
+    "source_file": "wildfire_weather.csv",
+    "train_years": [
+      2018,
+      2019,
+      2020
+    ],
+    "val_years": [
+      2021
+    ],
+    "train_samples": 400,
+    "val_samples": 2593,
+    "subsampled": true,
+    "max_train_cap": 400,
+    "class_balance": {
+      "train_fire_rate": 0.085,
+      "val_fire_rate": 0.086
+    }
+  },
+  "feature_engineering": {
+    "candidate_features": [
+      "avg_tmax_c",
+      "avg_tmin_c",
+      "tot_prcp_mm",
+      "temp_range",
+      "fire_count_lag1",
+      "fire_count_lag2",
+      "cumulative_fire_count",
+      "ever_had_fire"
+    ],
+    "selection_method": "SelectKBest (mutual_info_classif)",
+    "mi_scores": {
+      "avg_tmax_c": 0.0714,
+      "avg_tmin_c": 0.0607,
+      "tot_prcp_mm": 0.0317,
+      "temp_range": 0.0654,
+      "fire_count_lag1": 0.0029,
+      "fire_count_lag2": 0.0127,
+      "cumulative_fire_count": 0.0195,
+      "ever_had_fire": 0.0491
+    },
+    "selected_features": [
+      "avg_tmax_c",
+      "avg_tmin_c",
+      "tot_prcp_mm",
+      "temp_range",
+      "cumulative_fire_count",
+      "ever_had_fire"
+    ],
+    "scaler": "StandardScaler (fit on train)"
+  },
+  "quantum_config": {
+    "kernel": "FidelityStatevectorKernel",
+    "kernel_type": "ZZFeatureMap inner-product fidelity |<\u03c6(x)|\u03c6(y)>|\u00b2",
+    "feature_map": "ZZFeatureMap",
+    "num_qubits": 6,
+    "reps": 2,
+    "circuit_depth_decomposed": 49,
+    "num_parameters": 6,
+    "shots": "statevector (exact \u2014 equivalent to shots \u2192 \u221e)",
+    "backend": "statevector_simulator",
+    "K_train_shape": [
+      400,
+      400
+    ],
+    "K_val_shape": [
+      2593,
+      400
+    ],
+    "kernel_runtime_s": 4.3732,
+    "svm_train_runtime_s": 0.0041
+  },
+  "quantum_svm_results": {
+    "sklearn_kernel": "precomputed",
+    "class_weight": "balanced",
+    "roc_auc": 0.6117,
+    "f1": 0.026,
+    "precision": 0.375,
+    "recall": 0.0135
+  },
+  "classical_svm_baseline": {
+    "sklearn_kernel": "rbf",
+    "class_weight": "balanced",
+    "train_runtime_s": 0.0084,
+    "roc_auc": 0.7776,
+    "f1": 0.251,
+    "precision": 0.1813,
+    "recall": 0.4081
+  },
+  "comparison": {
+    "delta_roc_auc": -0.1658,
+    "delta_f1": -0.2251,
+    "delta_precision": 0.1937,
+    "delta_recall": -0.3946
+  }
+}
