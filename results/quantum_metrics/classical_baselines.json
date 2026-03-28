@@ -1,0 +1,86 @@
+{
+  "experiment": "classical_baselines_wildfire",
+  "timestamp_utc": "2026-03-28T16:47:11Z",
+  "random_seed": 42,
+  "data": {
+    "source_file": "wildfire_weather.csv",
+    "train_years": [
+      2018,
+      2019,
+      2020
+    ],
+    "val_years": [
+      2021
+    ],
+    "train_samples": 7779,
+    "val_samples": 2593,
+    "subsampled": false,
+    "class_balance": {
+      "train_fire_rate": 0.0838,
+      "val_fire_rate": 0.086
+    }
+  },
+  "features": {
+    "all_features_used": [
+      "avg_tmax_c",
+      "avg_tmin_c",
+      "tot_prcp_mm",
+      "temp_range",
+      "fire_count_lag1",
+      "fire_count_lag2",
+      "cumulative_fire_count",
+      "ever_had_fire"
+    ],
+    "scaler": "StandardScaler (fit on train)",
+    "class_weight": "balanced (sample_weight for GradientBoosting)"
+  },
+  "models": {
+    "logistic_regression": {
+      "params": {
+        "max_iter": 1000,
+        "class_weight": "balanced"
+      },
+      "roc_auc": 0.8647,
+      "f1": 0.3546,
+      "precision": 0.2252,
+      "recall": 0.8341,
+      "train_runtime_s": 0.0276
+    },
+    "random_forest": {
+      "params": {
+        "n_estimators": 300,
+        "class_weight": "balanced"
+      },
+      "roc_auc": 0.6406,
+      "f1": 0.1765,
+      "precision": 0.1007,
+      "recall": 0.713,
+      "train_runtime_s": 0.2566
+    },
+    "gradient_boosting": {
+      "params": {
+        "n_estimators": 300,
+        "learning_rate": 0.05,
+        "max_depth": 4,
+        "subsample": 0.8,
+        "class_weight": "balanced (via sample_weight)"
+      },
+      "roc_auc": 0.8471,
+      "f1": 0.2494,
+      "precision": 0.1443,
+      "recall": 0.9193,
+      "train_runtime_s": 0.8201
+    },
+    "svm_rbf": {
+      "params": {
+        "kernel": "rbf",
+        "class_weight": "balanced"
+      },
+      "roc_auc": 0.8372,
+      "f1": 0.3363,
+      "precision": 0.2106,
+      "recall": 0.8341,
+      "train_runtime_s": 3.8075
+    }
+  }
+}
