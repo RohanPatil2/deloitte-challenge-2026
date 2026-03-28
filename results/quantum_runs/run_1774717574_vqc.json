@@ -1,0 +1,80 @@
+{
+  "experiment": "vqc_wildfire",
+  "timestamp_utc": "2026-03-28T17:06:14Z",
+  "random_seed": 42,
+  "data": {
+    "source_file": "wildfire_weather.csv",
+    "train_years": [
+      2018,
+      2019,
+      2020
+    ],
+    "val_years": [
+      2021
+    ],
+    "train_samples": 800,
+    "val_samples": 2593,
+    "subsampled": true,
+    "max_train_cap": 800,
+    "class_balance": {
+      "train_fire_rate": 0.0838,
+      "val_fire_rate": 0.086
+    }
+  },
+  "feature_engineering": {
+    "candidate_features": [
+      "avg_tmax_c",
+      "avg_tmin_c",
+      "tot_prcp_mm",
+      "temp_range",
+      "fire_count_lag1",
+      "fire_count_lag2",
+      "cumulative_fire_count",
+      "ever_had_fire"
+    ],
+    "selection_method": "SelectKBest (mutual_info_classif)",
+    "mi_scores": {
+      "avg_tmax_c": 0.1014,
+      "avg_tmin_c": 0.0944,
+      "tot_prcp_mm": 0.0366,
+      "temp_range": 0.0807,
+      "fire_count_lag1": 0.0212,
+      "fire_count_lag2": 0.009,
+      "cumulative_fire_count": 0.0229,
+      "ever_had_fire": 0.0204
+    },
+    "selected_features": [
+      "avg_tmax_c",
+      "avg_tmin_c",
+      "tot_prcp_mm",
+      "temp_range"
+    ],
+    "scaler": "StandardScaler (fit on train)"
+  },
+  "vqc_config": {
+    "num_qubits": 4,
+    "feature_map": "ZZFeatureMap (reps=1)",
+    "feature_map_depth": 17,
+    "ansatz": "RealAmplitudes (reps=3, linear)",
+    "ansatz_depth": 11,
+    "full_circuit_depth": 27,
+    "num_parameters": 16,
+    "optimizer": "COBYLA (maxiter=100, scipy wrapper)",
+    "sampler": "StatevectorSampler (default_shots=1024)",
+    "loss": "WeightedCrossEntropyLoss (class_weight=balanced)",
+    "class_weights": {
+      "no_fire": 0.5457,
+      "fire": 5.9701
+    },
+    "iterations_run": 100,
+    "initial_loss": 1.007045,
+    "final_loss": 0.950001,
+    "train_runtime_s": 264.03
+  },
+  "vqc_results": {
+    "roc_auc": 0.5415,
+    "f1": 0.1535,
+    "precision": 0.0895,
+    "recall": 0.5381
+  }
+}
