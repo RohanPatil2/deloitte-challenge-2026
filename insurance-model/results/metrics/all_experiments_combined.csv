@@ -1,0 +1,17 @@
+Experiment,Model,MAE,RMSE,R2,MAPE
+A - No Wildfire Risk,Naive (Lag-1),866787.71,2247699.18,-0.7193,7956853.64
+A - No Wildfire Risk,Ridge,252793.23,648090.97,0.8571,3494542.63
+A - No Wildfire Risk,Random Forest,62861.07,272481.32,0.9747,71.45
+A - No Wildfire Risk,Gradient Boosting,79010.32,245963.11,0.9794,145505.94
+B - Provided Fire Risk Score,Naive (Lag-1),866787.71,2247699.18,-0.7193,7956853.64
+B - Provided Fire Risk Score,Ridge,244341.1,642283.09,0.8596,2665330.86
+B - Provided Fire Risk Score,Random Forest,63279.41,279253.03,0.9735,70.6
+B - Provided Fire Risk Score,Gradient Boosting,79590.69,249453.45,0.9788,148944.22
+C - Classical Wildfire Risk,Naive (Lag-1),866787.71,2247699.18,-0.7193,7956853.64
+C - Classical Wildfire Risk,Ridge,252119.61,647579.44,0.8573,3416218.94
+C - Classical Wildfire Risk,Random Forest,62758.8,273569.07,0.9745,71.13
+C - Classical Wildfire Risk,Gradient Boosting,78974.23,249769.66,0.9788,141841.39
+D - Quantum Wildfire Risk,Naive (Lag-1),866787.71,2247699.18,-0.7193,7956853.64
+D - Quantum Wildfire Risk,Ridge,252962.26,648074.66,0.8571,3511270.1
+D - Quantum Wildfire Risk,Random Forest,63327.76,278092.69,0.9737,72.54
+D - Quantum Wildfire Risk,Gradient Boosting,79056.11,253132.12,0.9782,143532.48

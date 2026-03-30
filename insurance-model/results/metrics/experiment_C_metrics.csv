@@ -1,0 +1,5 @@
+Experiment,Model,MAE,RMSE,R2,MAPE
+C - Classical Wildfire Risk,Naive (Lag-1),866787.71,2247699.18,-0.7193,7956853.64
+C - Classical Wildfire Risk,Ridge,252119.61,647579.44,0.8573,3416218.94
+C - Classical Wildfire Risk,Random Forest,62758.8,273569.07,0.9745,71.13
+C - Classical Wildfire Risk,Gradient Boosting,78974.23,249769.66,0.9788,141841.39
