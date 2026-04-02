@@ -1,0 +1,5 @@
+Experiment,Model,MAE,RMSE,R2,MAPE
+D - Quantum Wildfire Risk,Naive (Lag-1),866787.71,2247699.18,-0.7193,7956853.64
+D - Quantum Wildfire Risk,Ridge,252962.26,648074.66,0.8571,3511270.1
+D - Quantum Wildfire Risk,Random Forest,63327.76,278092.69,0.9737,72.54
+D - Quantum Wildfire Risk,Gradient Boosting,79056.11,253132.12,0.9782,143532.48

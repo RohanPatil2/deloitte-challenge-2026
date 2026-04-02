@@ -1,0 +1,5 @@
+Experiment,Model,MAE,RMSE,R2,MAPE
+A - No Wildfire Risk,Naive (Lag-1),866787.71,2247699.18,-0.7193,7956853.64
+A - No Wildfire Risk,Ridge,252793.23,648090.97,0.8571,3494542.63
+A - No Wildfire Risk,Random Forest,62861.07,272481.32,0.9747,71.45
+A - No Wildfire Risk,Gradient Boosting,79010.32,245963.11,0.9794,145505.94

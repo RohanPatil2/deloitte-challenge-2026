@@ -1,0 +1,5 @@
+Experiment,Model,MAE,RMSE,R2,MAPE
+B - Provided Fire Risk Score,Naive (Lag-1),866787.71,2247699.18,-0.7193,7956853.64
+B - Provided Fire Risk Score,Ridge,244341.1,642283.09,0.8596,2665330.86
+B - Provided Fire Risk Score,Random Forest,63279.41,279253.03,0.9735,70.6
+B - Provided Fire Risk Score,Gradient Boosting,79590.69,249453.45,0.9788,148944.22
