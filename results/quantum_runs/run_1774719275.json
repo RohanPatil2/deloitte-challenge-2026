@@ -1,0 +1,167 @@
+{
+  "experiment": "quantum_kernel_wildfire_svm_4v6_qubit",
+  "timestamp_utc": "2026-03-28T17:34:35Z",
+  "random_seed": 42,
+  "data": {
+    "source_file": "wildfire_weather.csv",
+    "train_years": [
+      2018,
+      2019,
+      2020
+    ],
+    "val_years": [
+      2021
+    ],
+    "train_samples": 800,
+    "val_samples": 2593,
+    "subsampled": true,
+    "max_train_cap": 800,
+    "class_balance": {
+      "train_fire_rate": 0.0838,
+      "val_fire_rate": 0.086
+    }
+  },
+  "shared_config": {
+    "candidate_features": [
+      "avg_tmax_c",
+      "avg_tmin_c",
+      "tot_prcp_mm",
+      "temp_range",
+      "fire_count_lag1",
+      "fire_count_lag2",
+      "cumulative_fire_count",
+      "ever_had_fire"
+    ],
+    "selection_method": "SelectKBest (mutual_info_classif)",
+    "scaler": "StandardScaler (fit on train per experiment)",
+    "kernel": "FidelityStatevectorKernel (exact statevector)",
+    "reps": 2,
+    "shots": "statevector (exact \u2014 equivalent to shots \u2192 \u221e)",
+    "backend": "statevector_simulator",
+    "class_weight": "balanced"
+  },
+  "quantum_4qubit": {
+    "num_qubits": 4,
+    "feature_map_name": "ZZFeatureMap",
+    "selected_features": [
+      "avg_tmax_c",
+      "avg_tmin_c",
+      "tot_prcp_mm",
+      "temp_range"
+    ],
+    "mi_scores": {
+      "avg_tmax_c": 0.1014,
+      "avg_tmin_c": 0.0944,
+      "tot_prcp_mm": 0.0366,
+      "temp_range": 0.0807,
+      "fire_count_lag1": 0.0212,
+      "fire_count_lag2": 0.009,
+      "cumulative_fire_count": 0.0229,
+      "ever_had_fire": 0.0204
+    },
+    "circuit_depth": 31,
+    "num_parameters": 4,
+    "K_train_shape": [
+      800,
+      800
+    ],
+    "K_val_shape": [
+      2593,
+      800
+    ],
+    "kernel_runtime_s": 6.8393,
+    "svm_train_runtime_s": 0.0122,
+    "roc_auc": 0.4701,
+    "pr_auc": 0.0844,
+    "f1": 0.1316,
+    "precision": 0.0811,
+    "recall": 0.3498
+  },
+  "quantum_6qubit": {
+    "num_qubits": 6,
+    "feature_map_name": "ZZFeatureMap",
+    "selected_features": [
+      "avg_tmax_c",
+      "avg_tmin_c",
+      "tot_prcp_mm",
+      "temp_range",
+      "cumulative_fire_count",
+      "ever_had_fire"
+    ],
+    "mi_scores": {
+      "avg_tmax_c": 0.1014,
+      "avg_tmin_c": 0.0944,
+      "tot_prcp_mm": 0.0389,
+      "temp_range": 0.0807,
+      "fire_count_lag1": 0.006,
+      "fire_count_lag2": 0.0033,
+      "cumulative_fire_count": 0.0357,
+      "ever_had_fire": 0.0219
+    },
+    "circuit_depth": 49,
+    "num_parameters": 6,
+    "K_train_shape": [
+      800,
+      800
+    ],
+    "K_val_shape": [
+      2593,
+      800
+    ],
+    "kernel_runtime_s": 8.3647,
+    "svm_train_runtime_s": 0.008,
+    "roc_auc": 0.6222,
+    "pr_auc": 0.1105,
+    "f1": 0.0552,
+    "precision": 0.0469,
+    "recall": 0.0673
+  },
+  "quantum_pauli_4qubit": {
+    "num_qubits": 4,
+    "feature_map_name": "PauliFeatureMap",
+    "selected_features": [
+      "avg_tmax_c",
+      "avg_tmin_c",
+      "temp_range",
+      "cumulative_fire_count"
+    ],
+    "mi_scores": {
+      "avg_tmax_c": 0.1014,
+      "avg_tmin_c": 0.0944,
+      "tot_prcp_mm": 0.0342,
+      "temp_range": 0.0807,
+      "fire_count_lag1": 0.0171,
+      "fire_count_lag2": 0.016,
+      "cumulative_fire_count": 0.0358,
+      "ever_had_fire": 0.0207
+    },
+    "circuit_depth": 31,
+    "num_parameters": 4,
+    "K_train_shape": [
+      800,
+      800
+    ],
+    "K_val_shape": [
+      2593,
+      800
+    ],
+    "kernel_runtime_s": 7.345,
+    "svm_train_runtime_s": 0.01,
+    "roc_auc": 0.5436,
+    "pr_auc": 0.1182,
+    "f1": 0.169,
+    "precision": 0.1026,
+    "recall": 0.4798
+  },
+  "classical_svm_baseline": {
+    "kernel": "rbf",
+    "class_weight": "balanced",
+    "feature_set": "6-qubit selected features",
+    "train_runtime_s": 0.0332,
+    "roc_auc": 0.8136,
+    "pr_auc": 0.2316,
+    "f1": 0.3432,
+    "precision": 0.2304,
+    "recall": 0.6726
+  }
+}
