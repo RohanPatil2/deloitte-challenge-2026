@@ -8,6 +8,7 @@ __pycache__/
 
 # Virtual environments
 .venv/
+.venv-report/
 venv/
 env/
 
@@ -25,4 +26,3 @@ data/raw/*.csv
 data/processed/*.csv
 insurance-model/data/raw/*.csv
 insurance-model/data/processed/*.csv
-

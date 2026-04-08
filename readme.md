@@ -29,6 +29,13 @@ Insurance outputs:
 - `insurance-model/results/metrics/all_experiments_combined.csv`
 - `insurance-model/results/figures/experiment_comparison.png`
 
+Submission package:
+
+- `reports/final_submission/Deloitte_Quantum_Sustainability_Challenge_2026_Submission.md`
+- `reports/final_submission/Deloitte_Quantum_Sustainability_Challenge_2026_Submission.pdf`
+- `reports/final_submission/build_submission_package.py`
+- `reports/final_submission/check_submission.py`
+
 ## Checked-In Results Snapshot
 
 Based on the committed CSV artifacts:
@@ -43,7 +50,7 @@ Based on the committed CSV artifacts:
 ```text
 .
 ├── data/                         # wildfire raw data
-├── reports/                      # wildfire figures and tables
+├── reports/                      # wildfire figures, tables, and submission package
 ├── results/                      # wildfire JSON logs and metrics
 ├── src/
 │   ├── evaluation/               # comparison/resource table builders, baselines
@@ -76,6 +83,7 @@ The repo includes generated result files already, so documentation and report wo
 ## Recommended Next Steps
 
 - Use `reports/REPORT_OUTLINE.md` as the starting structure for the written submission.
+- Build the final package with `./.venv-report/bin/python reports/final_submission/build_submission_package.py`.
+- Verify the package with `./.venv-report/bin/python reports/final_submission/check_submission.py`.
 - Keep the report explicit about which results are validation experiments versus final challenge deliverables.
 - If final submission requires 2023 wildfire predictions, rerun Task 1 with the challenge-aligned train window before packaging the final deck.
-
