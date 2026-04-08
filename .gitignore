@@ -1,24 +1,28 @@
-cd /Users/aishwaryadas/deloitte-challenge-2026/insurance-model
-
-cat > .gitignore << 'EOF'
-# Python cache
+# Python bytecode and caches
 __pycache__/
-*.pyc
+*.py[cod]
 *.pyo
 .Python
+.pytest_cache/
+.mypy_cache/
 
-# Mac system files
-.DS_Store
-**/.DS_Store
+# Virtual environments
+.venv/
+venv/
+env/
 
-# Jupyter checkpoints
+# Notebook checkpoints
 .ipynb_checkpoints/
 **/.ipynb_checkpoints/
 
-# Virtual environment
-.venv/
+# OS/editor noise
+.DS_Store
+**/.DS_Store
+Thumbs.db
 
-# Large data files (too big for GitHub)
+# Large local data artifacts
 data/raw/*.csv
 data/processed/*.csv
-EOF
+insurance-model/data/raw/*.csv
+insurance-model/data/processed/*.csv
+
