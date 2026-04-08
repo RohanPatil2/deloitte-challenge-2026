@@ -33,22 +33,46 @@ def main() -> None:
         raise SystemExit(1)
 
     markdown = required_outputs[0].read_text(encoding="utf-8")
-    abstract_section = markdown.split("## Abstract", 1)[1].split("## Data", 1)[0]
+    abstract_section = markdown.split("## One-Page Summary / Abstract", 1)[1].split(
+        "## Detailed Description of the Participant's Algorithm", 1
+    )[0]
     abstract_words = len([token for token in abstract_section.split() if token.strip()])
     github_links = markdown.count("https://github.com/")
     pdf_size = required_outputs[1].stat().st_size
+
+    required_headings = [
+        "## Overview of the Individual or Team and Backgrounds",
+        "## One-Page Summary / Abstract",
+        "## Detailed Description of the Participant's Algorithm",
+        "## Description of Results",
+        "## Description of the Envisioned Algorithm",
+        "## Clickable Repo Links",
+    ]
+    required_markers = [
+        "task 1a",
+        "task 1b",
+        "task 2",
+        "additional data used",
+    ]
 
     print("Submission package looks complete.")
     print(f"Abstract word count: {abstract_words}")
     print(f"GitHub links found in markdown: {github_links}")
     print(f"PDF size: {pdf_size} bytes")
 
-    if abstract_words < 350 or abstract_words > 450:
-        raise SystemExit("Abstract length drifted outside the expected 350-450 word range.")
+    if abstract_words > 400:
+        raise SystemExit("Abstract exceeds the 400-word competition limit.")
     if github_links < 5:
         raise SystemExit("Expected at least five clickable GitHub links in the report.")
     if pdf_size <= 0:
         raise SystemExit("Generated PDF is empty.")
+    for heading in required_headings:
+        if heading not in markdown:
+            raise SystemExit(f"Missing required report heading: {heading}")
+    markdown_lower = markdown.lower()
+    for marker in required_markers:
+        if marker not in markdown_lower:
+            raise SystemExit(f"Missing required task/compliance marker: {marker}")
 
 
 if __name__ == "__main__":
